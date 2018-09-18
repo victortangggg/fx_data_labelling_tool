@@ -24,9 +24,9 @@ this tool is created for me to label the trend of past FX data. labelled data is
 
 * using brush to window data instead of existing dateRangeInput (for better UX)
 
-* persisting labelled data
+* ~~persisting labelled data~~
 
-* CSV export of labelled dataframe
+* ~~CSV export of labelled dataframe~~
 
 * function to flag unlabelled data
 

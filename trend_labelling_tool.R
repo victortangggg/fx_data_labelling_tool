@@ -4,21 +4,26 @@ library(data.table)
 library(scales)
 library(shiny)
 
-df <- read.csv("GBPUSDDaily.csv", sep=",", fileEncoding="utf-16")
-df$Null <- NULL
-df$Date <- as.Date(df$Date, "%Y.%m.%d")
-df$trend <- 0
+filename <- "GBPUSDDaily.csv"
 
-long_period <- 100
-short_period <- 50
+df <- read.csv(filename, sep=",", fileEncoding="utf-16")
+if(is.null(df$trend)) {
+    df$Null <- NULL
+    df$Date <- as.Date(df$Date, "%Y.%m.%d")
+    df$trend <- 0
+    
+    long_period <- 100
+    short_period <- 50
+    df <- df %>% 
+        mutate(sma_LONGPERIOD = SMA( Close , n=long_period)) %>%
+        mutate(sma_SHORTPERIOD = SMA( Close, n=short_period)) %>%
+        filter(!is.na(sma_SHORTPERIOD) & !is.na(sma_LONGPERIOD))
+} else {
+    df$Date <- as.Date(df$Date, "%Y-%m-%d")
+}
 
 min_date <- min(df$Date)
 max_date <- max(df$Date)
-
-df <- df %>% 
-    mutate(sma_LONGPERIOD = SMA( Close , n=long_period)) %>%
-    mutate(sma_SHORTPERIOD = SMA( Close, n=short_period)) %>%
-    filter(!is.na(sma_SHORTPERIOD) & !is.na(sma_LONGPERIOD))
 
 
 ui <- fluidPage(
@@ -32,7 +37,9 @@ ui <- fluidPage(
                        end = max(df$Date)),
         verbatimTextOutput("fx_hover_info"),
         actionButton("label_up", "Label 'Up'"),
-        actionButton("label_down", "Label 'Down'")
+        actionButton("label_down", "Label 'Down'"),
+        actionButton("save_df", "Save"),
+        verbatimTextOutput("num_unlabelled")
     ),
     
     mainPanel(
@@ -62,7 +69,7 @@ server <- function(input, output, session) {
         
         rval$dat <- rval$dat %>%
             mutate(trend = ifelse(Date >= as.Date(first_row_date) & Date <= as.Date(last_row_date), 1, trend))
-            
+        
     })
     
     observeEvent(input$label_down, {
@@ -85,6 +92,10 @@ server <- function(input, output, session) {
         updateDateRangeInput(session, "dateRange",
                              start = min(df$Date),
                              end = max(df$Date))
+    })
+    
+    observeEvent(input$save_df, {
+        write.csv(rval$dat, file = filename, row.names=FALSE, fileEncoding = "utf-16")
     })
     
     output$fx_plot <- renderPlot({
@@ -113,6 +124,12 @@ server <- function(input, output, session) {
     
     output$fx_brush_info <- renderPrint({
         brushedPoints(rval$dat, input$fx_plot_brush)
+    })
+    
+    output$num_unlabelled <- renderPrint({
+        rval$dat %>%
+            filter(trend == 0) %>%
+            nrow()
     })
 }
 
