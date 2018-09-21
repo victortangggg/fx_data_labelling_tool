@@ -1,6 +1,6 @@
 library(tidyquant)
 library(ggplot2)
-library(data.table)
+library(data.table) 
 library(scales)
 library(shiny)
 
@@ -31,22 +31,37 @@ ui <- fluidPage(
     titlePanel("Trend Labelling Tool"),
     
     sidebarPanel(
-        actionButton("return_full_plot", "Return Full Plot"),
+        column(
+            width = 6,
+            actionButton("return_full_plot", "Return Full Plot", width = "100%")
+        ),
+        column(
+            width = 6,
+            actionButton("save_df", "Save", width = "100%")
+        ),
         dateRangeInput("dateRange", "Date Range: ", 
                        start = min(df$Date), 
                        end = max(df$Date)),
         verbatimTextOutput("fx_hover_info"),
-        actionButton("label_up", "Label 'Up'"),
-        actionButton("label_down", "Label 'Down'"),
-        actionButton("save_df", "Save"),
-        verbatimTextOutput("num_unlabelled")
+        actionButton("label_up", "Label 'Up'", width = "100%"),
+        actionButton("label_down", "Label 'Down'", width = "100%"),
+        verbatimTextOutput("num_unlabelled"),
+        div(style="display:inline-block", textInput("column_name", "Column Name (label): ", width = "100%")),
+        div(style="display:inline-block", textInput("column_value", "Column Value: ", width = "100%")),
+        actionButton("add_new_label", "Add Label")
     ),
     
     mainPanel(
-        plotOutput("fx_plot", height = 350,
+        plotOutput("fx_plot", height = 450,
                    hover = hoverOpts(id = "fx_plot_hover"),
-                   brush = brushOpts(id = "fx_plot_brush")),
-        verbatimTextOutput("fx_brush_info")
+                   brush = brushOpts(id = "fx_plot_brush"))
+    ),
+    
+    fluidPage(
+        fluidRow(
+            style="overflow-y: auto",
+            verbatimTextOutput("fx_brush_info")
+        )
     )
 )
 
@@ -88,6 +103,22 @@ server <- function(input, output, session) {
         
     })
     
+    observeEvent(input$add_new_label, {
+        brushed_points <- brushedPoints(rval$dat, input$fx_plot_brush)$Date
+        
+        first_row_date <- format(
+            brushed_points[1]
+        )
+        
+        last_row_date <- format(
+            brushed_points[length(brushed_points)]
+        )
+        
+        rval$dat <- rval$dat %>%
+            mutate(!!input$column_name := ifelse(Date >= as.Date(first_row_date) & Date <= as.Date(last_row_date), input$column_value, 0))
+        
+    })
+    
     observeEvent(input$return_full_plot, {
         updateDateRangeInput(session, "dateRange",
                              start = min(df$Date),
@@ -104,14 +135,14 @@ server <- function(input, output, session) {
         max_date <- format(input$dateRange[2])
         
         ggplot(
-          rval$dat %>%
+            rval$dat %>%
               filter(Date %between% c(min_date, max_date))
-          , aes(y = Close, x = Date)) +
-          geom_candlestick(aes(open=Open, high=High, low=Low, close=Close)) +
-          geom_line(aes(x = Date, y = sma_LONGPERIOD, group = 1), color = "green") +
-          geom_line(aes(x = Date, y = sma_SHORTPERIOD, group = 2), color='steelblue') +
-          theme_tq() +
-          scale_x_date(labels = date_format("%Y-%m-%d"))
+            , aes(y = Close, x = Date)) +
+            geom_candlestick(aes(open=Open, high=High, low=Low, close=Close)) +
+            geom_line(aes(x = Date, y = sma_LONGPERIOD, group = 1), color = "green") +
+            geom_line(aes(x = Date, y = sma_SHORTPERIOD, group = 2), color='steelblue') +
+            theme_bw() +
+            scale_x_date(labels = date_format("%Y-%m-%d")) 
     })
   
     output$fx_hover_info <- renderPrint({

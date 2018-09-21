@@ -1,4 +1,4 @@
-# FX trend labelling tool (incomplete)
+# FX trend/pattern labelling tool
 
 make sure to have the following r packages:
 ```
@@ -18,16 +18,18 @@ to run:
 
 data loaded is a csv containing past data of currency pair GBPUSD (daily), extracted from MetaTrader 5
 
-this tool is created for me to label the trend of past FX data. labelled data is subsequently used for my personal research in FX data analysis.
+this tool is created for me to label the trend/patterns of past FX data. labelled data is subsequently used for my personal research in FX data analysis.
 
 ## TODO
 
-* using brush to window data instead of existing dateRangeInput (for better UX)
+* ~~able to add new column name & value~~
 
 * ~~persisting labelled data~~
 
 * ~~CSV export of labelled dataframe~~
 
-* function to flag unlabelled data
+* ~~function to flag number of unlabelled data~~
+
+* call quandl fx data instead of static MT5 FX csv(180 days only)
 
 if you are a researcher looking to have a way to label the trend of your stock/fx data and you think this is useful, feel free to clone this. if it sucks, feel free to let me know what can be done better!
